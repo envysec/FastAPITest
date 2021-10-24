@@ -1,3 +1,10 @@
+# Postgres Requirements
+asyncpg==0.23.0
+tortoise-orm==0.17.4
+## Database Migrations
+aerich==0.5.3
+
+# Base Requirements
 fastapi==0.65.3
-uvicorn==0.14.0
 pre-commit==2.15.0
+uvicorn==0.14.0
