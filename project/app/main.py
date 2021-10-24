@@ -3,29 +3,32 @@ Entry point of application along with endpoint routes.
 
 project/app/main.py
 """
-from os import environ
+from logging import getLogger
 
-from fastapi import FastAPI, Depends
-from tortoise.contrib.fastapi import register_tortoise
+from fastapi import FastAPI
 
-from app.config import get_settings, Settings
+from app.api import ping
+from app.db import init_db
 
-app = FastAPI()
-
-
-register_tortoise(
-  app,
-  db_url=environ.get('DATABASE_URL'),
-  modules={'models': ['app.models.tortoise']},
-  generate_schemas=False,
-  add_exception_handlers=True
-)
+log = getLogger('uvicorn')
 
 
-@app.get('/ping')
-async def pong(settings: Settings = Depends(get_settings)):
-  return {
-    'ping': 'pong!',
-    'environment': settings.environment,
-    'testing': settings.testing
-  }
+def create_application() -> FastAPI:
+  application = FastAPI()
+  application.include_router(ping.router)
+
+  return application
+
+
+app = create_application()
+
+
+@app.on_event('startup')
+async def startup_event():
+  log.info('Starting up...')
+  init_db(app)
+
+
+@app.on_event('shutdown')
+async def shutdown_event():
+  log.info('Shutting down...')

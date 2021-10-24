@@ -3,8 +3,14 @@ Tortois config for Aerich database migration
 
 project/app/db.py
 """
+from logging import getLogger
 from os import environ
 
+from fastapi import FastAPI
+from tortoise import Tortoise, run_async
+from tortoise.contrib.fastapi import register_tortoise
+
+log = getLogger('uvicorn')
 
 TORTOISE_ORM = {
   'connections': {'default': environ.get('DATABASE_URL')},
@@ -15,3 +21,29 @@ TORTOISE_ORM = {
     }
   }
 }
+
+
+def init_db(app: FastAPI) -> None:
+  register_tortoise(
+    app,
+    db_url=environ.get('DATABASE_URL'),
+    modules={'models': ['app.models.tortoise']},
+    generate_schemas=False,
+    add_exception_handlers=True
+  )
+
+
+async def generate_schema() -> None:
+  log.info('Initializing Tortoise...')
+
+  await Tortoise.init(
+    db_url=environ.get('DATABASE_URL'),
+    modules={'models': ['models.tortoise']}
+  )
+  log.info('Generating database schema via Tortoise...')
+  await Tortoise.generate_schemas()
+  await Tortoise.close_connections()
+
+
+if __name__== '__main__':
+  run_async(generate_schema())
